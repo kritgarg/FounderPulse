@@ -1,0 +1,599 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://rhbzdhfgpghyduesbyqb.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "nst-startup-track-mcp",
+      "version": "0.1.0",
+      "title": "NST Startup Track"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Who am I",
+        "description": "Return the signed-in user's id, email, and roles in the NST Startup Track.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_founders",
+        "title": "List founders",
+        "description": "List founders in the NST Startup Track visible to the signed-in user (RLS-scoped: students see their own, staff/leadership see all).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Max rows to return (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_founder_intake",
+        "title": "Get founder Day-1 intake",
+        "description": "Fetch the Day-1 intake (baseline) for a given founder. RLS restricts access to the founder themselves or staff.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Founder id."
+            }
+          },
+          "required": [
+            "founder_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_biweekly_submissions",
+        "title": "List bi-weekly submissions",
+        "description": "List bi-weekly submissions for a founder in the NST Startup Track. RLS enforces access (student sees own, staff sees all).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Founder id whose submissions to list."
+            }
+          },
+          "required": [
+            "founder_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_biweekly_submissions_scoped",
+        "title": "List bi-weekly submissions (role-scoped, with lock & missed flags)",
+        "description": "List bi-weekly submissions the signed-in user is allowed to see. Students see only their own; staff (faculty/super_admin) and mentors see all. Each row is enriched with is_submitted, is_draft, is_locked (past deadline or already submitted), is_missed (deadline passed with no submitted_at), and deadline date. Filter by founder_id, campus, lifecycle stage, or cycle window.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "description": "Restrict to one founder.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "campus": {
+              "description": "Filter by founder campus (staff-visible only).",
+              "type": "string"
+            },
+            "stage": {
+              "description": "Filter by lifecycle stage.",
+              "type": "string",
+              "enum": [
+                "idea",
+                "discovery",
+                "validation",
+                "mvp",
+                "pilot",
+                "revenue",
+                "growth",
+                "fundraising"
+              ]
+            },
+            "cycle_from": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "cycle_to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "status": {
+              "description": "Filter by computed lifecycle state.",
+              "type": "string",
+              "enum": [
+                "submitted",
+                "draft",
+                "locked",
+                "missed",
+                "open"
+              ]
+            },
+            "limit": {
+              "description": "Max rows (default 100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_evidence_checklist",
+        "title": "Get evidence checklist for a cycle",
+        "description": "Return the stage-aware evidence checklist and upload requirements for a bi-weekly cycle (1-13). Use to tell a founder or mentor exactly what to submit or review this cycle.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "cycle_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13,
+              "description": "Bi-weekly cycle number."
+            }
+          },
+          "required": [
+            "cycle_number"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_current_cycle_window",
+        "title": "Get current bi-weekly cycle window",
+        "description": "For the signed-in founder, return the current bi-weekly cycle number, its start/end dates, submit deadline (period_end + 3-day grace), and any past/future windows relative to their intake date. Requires the user to be linked to a founder profile.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_biweekly_submission",
+        "title": "Create bi-weekly submission",
+        "description": "Let the signed-in founder create (or update-and-submit) a bi-weekly submission for a given cycle. Attach evidence via a list of URLs. RLS enforces founder ownership; the biweekly lock trigger rejects late submissions and edits after the deadline.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "cycle_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13,
+              "description": "Bi-weekly cycle number (1-13)."
+            },
+            "period_start": {
+              "type": "string",
+              "description": "Cycle start date (YYYY-MM-DD)."
+            },
+            "period_end": {
+              "type": "string",
+              "description": "Cycle end date (YYYY-MM-DD)."
+            },
+            "progress_summary": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What was accomplished this cycle."
+            },
+            "wins": {
+              "type": "string"
+            },
+            "blockers": {
+              "type": "string"
+            },
+            "ask_for_help": {
+              "type": "string"
+            },
+            "goals_next_cycle": {
+              "type": "string"
+            },
+            "hours_worked": {
+              "type": "number"
+            },
+            "customer_interviews": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "features_shipped": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "experiments_run": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "revenue": {
+              "type": "number"
+            },
+            "users_acquired": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "mentor_meeting_date": {
+              "description": "YYYY-MM-DD.",
+              "type": "string"
+            },
+            "mentor_meeting_notes": {
+              "type": "string"
+            },
+            "evidence_links": {
+              "description": "List of evidence URLs (demo videos, docs, dashboards, etc.).",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "submit": {
+              "description": "If true, mark submitted_at=now(). If false/omitted, saves as draft.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "cycle_number",
+            "period_start",
+            "period_end",
+            "progress_summary"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "submit_mentor_observation",
+        "title": "Submit mentor observation",
+        "description": "Create or update a mentor's bi-weekly observation for a founder+cycle. Links the observation to specific evidence items (by evidence_items.id) or URLs the mentor reviewed. RLS restricts writes to staff or users with the mentor role. Upserts on (founder_id, cycle_number).",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Founder id being observed."
+            },
+            "cycle_number": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13,
+              "description": "Bi-weekly cycle number (1-13)."
+            },
+            "observation": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Main observation / narrative for this cycle."
+            },
+            "strengths": {
+              "description": "What is going well.",
+              "type": "string"
+            },
+            "concerns": {
+              "description": "Risks or concerns to flag.",
+              "type": "string"
+            },
+            "action_items": {
+              "description": "Recommended next actions for the founder.",
+              "type": "string"
+            },
+            "evidence_reviewed": {
+              "description": "List of evidence_items.id UUIDs or evidence URLs the mentor reviewed.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "founder_id",
+            "cycle_number",
+            "observation"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upsert_faculty_evaluation",
+        "title": "Create or update faculty evaluation",
+        "description": "Create or update a faculty evaluation for a founder's bi-weekly submission. Scores are on the standard NST rubric: execution (0-40), customer (0-25), business (0-20), behavior (0-15). Includes evidence references (evidence_items ids or URLs the evaluator cited) and free-text recommendations. Only staff (faculty/super_admin) can write; the trigger auto-computes total_score and status (green/yellow/red).",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "packet_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "The biweekly_submissions.id (or submission_packets.id) this evaluation refers to."
+            },
+            "founder_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Founder id being evaluated."
+            },
+            "cycle_number": {
+              "description": "Bi-weekly cycle number.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "execution_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 40,
+              "description": "Execution pillar (0-40)."
+            },
+            "customer_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 25,
+              "description": "Customer pillar (0-25)."
+            },
+            "business_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 20,
+              "description": "Business pillar (0-20)."
+            },
+            "behavior_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 15,
+              "description": "Behavior pillar (0-15)."
+            },
+            "decision": {
+              "type": "string",
+              "enum": [
+                "approve",
+                "reject",
+                "edit",
+                "resubmit"
+              ],
+              "description": "Faculty decision on this evaluation."
+            },
+            "comments": {
+              "description": "Free-text faculty comments.",
+              "type": "string"
+            },
+            "recommendations": {
+              "description": "Actionable recommendations for the founder.",
+              "type": "string"
+            },
+            "evidence_refs": {
+              "description": "Evidence item ids (uuid) or URLs the evaluator cited.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "packet_id",
+            "founder_id",
+            "execution_score",
+            "customer_score",
+            "business_score",
+            "behavior_score",
+            "decision"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_founder_evaluations",
+        "title": "Get founder evaluations",
+        "description": "Return the latest faculty evaluations (scores, status, decision, comments, recommendations) for a given founder. If founder_id is omitted, uses the signed-in user's linked founder profile. RLS enforces access.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "description": "Founder id. Defaults to the signed-in user's founder.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "limit": {
+              "description": "Max rows (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "export_evaluations_csv",
+        "title": "Export evaluations to CSV",
+        "description": "Export faculty evaluations as CSV, filtered by campus, lifecycle stage, date range (decided_at), or cycle-number window. RLS applies — students only see their own approved reviews; staff see everything. Result is returned as CSV text.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "campus": {
+              "description": "Filter to founders on this campus.",
+              "type": "string"
+            },
+            "stage": {
+              "description": "Filter to founders in this lifecycle stage.",
+              "type": "string",
+              "enum": [
+                "idea",
+                "discovery",
+                "validation",
+                "mvp",
+                "pilot",
+                "revenue",
+                "growth",
+                "fundraising"
+              ]
+            },
+            "date_from": {
+              "description": "ISO date (inclusive) lower bound on decided_at.",
+              "type": "string"
+            },
+            "date_to": {
+              "description": "ISO date (inclusive) upper bound on decided_at.",
+              "type": "string"
+            },
+            "cycle_from": {
+              "description": "Lower bound on cycle_number.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "cycle_to": {
+              "description": "Upper bound on cycle_number.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "generate_review_board_summary",
+        "title": "Generate startup review board summary",
+        "description": "Produce a concise review board summary (strengths, concerns, recommendation, rationale) for a founder across a selected cycle window or date range. Pulls the founder's bi-weekly submissions, faculty evaluations, and mentor observations under RLS, then asks the NST review-board LLM to synthesize. Staff-only.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "founder_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "Founder to summarize."
+            },
+            "cycle_from": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "cycle_to": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 13
+            },
+            "date_from": {
+              "description": "ISO date lower bound (period_end).",
+              "type": "string"
+            },
+            "date_to": {
+              "description": "ISO date upper bound (period_end).",
+              "type": "string"
+            }
+          },
+          "required": [
+            "founder_id"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
