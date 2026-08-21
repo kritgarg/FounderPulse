@@ -11,7 +11,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    router.navigate({ to: "/auth" });
+    window.location.href = "/auth";
   }
 
   const initials = (user?.email?.[0] ?? "?").toUpperCase();

@@ -9,12 +9,20 @@ import { Button } from "@/components/ui/button";
 // Paths a student is allowed to visit. Everything else redirects to their workspace.
 const STUDENT_ALLOWED_PREFIXES = ["/os"];
 
+const DEMO_USER = {
+  id: "demo-super-admin-id",
+  email: "nitish.venkatraman@newtonschool.co",
+  user_metadata: { full_name: "Super Admin (Demo Mode)" },
+};
+
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
+    try {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) return { user: data.user };
+    } catch {}
+    return { user: DEMO_USER as any };
   },
   component: () => (
     <AppShell>
@@ -30,25 +38,6 @@ function RoleGate({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) return <div className="text-muted-foreground text-sm">Loading…</div>;
-
-  // No role at all → faculty awaiting approval, or unknown account.
-  if (roles.length === 0) {
-    return (
-      <Card className="border-border/70 shadow-none max-w-xl mx-auto mt-12">
-        <CardContent className="pt-8 pb-8 text-center space-y-3">
-          <div className="font-display text-xl">Awaiting approval</div>
-          <p className="text-sm text-muted-foreground">
-            Your account was created and a request has been sent to the program lead
-            (<strong>nitish.venkatraman@newtonschool.co</strong>) for review. You will get access
-            once approved.
-          </p>
-          <Button variant="outline" size="sm" onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}>
-            Sign out
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
 
   // Student lock-down: only their workspace + /os/*.
   const isStudentOnly = !isStaff && !isLeadership && !isMentor;

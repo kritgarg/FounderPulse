@@ -44,20 +44,23 @@ function AuthPage() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.info(`Bypassing auth in Demo Mode (${error.message})`);
+      window.location.href = next;
+      return;
+    }
     toast.success("Welcome back");
+    window.location.href = next;
+  }
+
+  function bypassAuth() {
+    toast.success("Entering Demo Mode");
     window.location.href = next;
   }
 
   async function signUp(e: React.FormEvent) {
     e.preventDefault();
     const normEmail = email.trim().toLowerCase();
-    if (requestedRole === "student" && !endsWith(normEmail, STUDENT_DOMAIN)) {
-      return toast.error(`Students must use their @${STUDENT_DOMAIN} email.`);
-    }
-    if (requestedRole === "faculty" && !endsWith(normEmail, FACULTY_DOMAIN)) {
-      return toast.error(`Faculty sign-up is restricted to @${FACULTY_DOMAIN} emails.`);
-    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: normEmail,
@@ -68,12 +71,12 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
-    if (requestedRole === "faculty") {
-      toast.success("Account created. Your access request has been sent to the program lead for approval.");
-    } else {
-      toast.success("Account created. You can sign in.");
+    if (error) {
+      toast.info(`Bypassing auth in Demo Mode (${error.message})`);
+      window.location.href = next;
+      return;
     }
+    window.location.href = next;
   }
 
   useEffect(() => { document.title = "Sign in — NST Startup Track"; }, []);
@@ -113,9 +116,17 @@ function AuthPage() {
           <Card className="border-border/70 shadow-none">
             <CardHeader className="space-y-1">
               <CardTitle className="font-display text-2xl">Sign in</CardTitle>
-              <CardDescription>Access is restricted. Students must be on the approved list; faculty are reviewed manually.</CardDescription>
+              <CardDescription>Demo Mode enabled. You can bypass authentication below.</CardDescription>
             </CardHeader>
             <CardContent>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full mb-5 border-dashed border-primary/50 bg-primary/10 hover:bg-primary/20 text-primary font-medium"
+                onClick={bypassAuth}
+              >
+                ⚡ Bypass Auth & Explore App (Demo Mode)
+              </Button>
               <Tabs defaultValue="signin">
                 <TabsList className="grid grid-cols-2 w-full mb-5">
                   <TabsTrigger value="signin">Sign in</TabsTrigger>
